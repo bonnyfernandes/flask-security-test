@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+<body>
+
+<form id="fileForm" method="post" enctype="multipart/form-data">
+    <div>
+    Name : <input name="name" type="text" placeholder="Name"><br><br>
+    picture : <input id="picture" type="file" accept="/image/*" name="picture"><br>
+    <h3><font color="red" id="error"></font></h3>
+    <h3><font color="green" id="message"></font></h3>
+    <input type="button" onclick="uploadFile()" value="Upload">
+    </div>
+
+</form>
+
+</body>
+<script>
+    function uploadFile(){
+        var form = document.querySelector('#fileForm');
+        var formData = new FormData(form);
+        $.ajax({
+            url : 'http://127.0.0.1:5001/api/auth/test',
+            contentType: false,
+            cache: false,
+            processData: false,
+            async: false,
+            type : 'POST',
+            data : formData,
+            success : function(resp) {
+                    if(resp['error'])
+                    {
+                        $('#error').text(resp['error']);
+                        $('#message').text("");
+                       }
+                    else if(resp['message'])
+                    {
+                        $('#message').text(resp['message']);
+                        $('#error').text("");
+                     }
+                    else
+                        alert(resp);
+            },
+            error : function(request,error) {
+                console.log(request);
+                alert("failed");
+                alert(request);
+            }
+        });
+    }
+
+</script>
+</html>

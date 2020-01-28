@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Users</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+</head>
+<body>
+    <h1>Search Users</h1>
+    <center><h4><font color="red" id="error"></font></h4></center>
+    <table border = 1 id="user_table">
+        <tr>
+            <form method="POST" onsubmit="call_search();" id="searchForm">
+                <input type="submit" value="Search">
+                <input value="Clear Fields" type="reset">
+                Per page : <input id="per_page" name="per_page" type="text" value="10">
+                Page Number : <input id="page_no" name="page_no" type="text" value="1">
+                <th>Picture</th>
+                <th>Username<input id="username" type="text" name="username"></th>
+                <th>Name<input id="first_name" placeholder="First Name" type="text" name="first_name">
+                    <input id="last_name" placeholder="Last Name" type="text" name="last_name"></th>
+                <th>Role<select name="role" multiple id="role"></select></th>
+            </form>
+        </tr>
+      </table>
+    <br>
+    <button onclick="logout();">Logout</button>
+
+</body>
+<script>
+$(document).ready(function(){
+  if ($.cookie('access_token') != null) {
+    call_search();
+    list_roles();
+  }
+});
+function call_search() {
+        $('#user_table td').parent().remove();
+        var access_token = $.cookie('access_token');
+        var username = $('#username').val();
+        var first_name = $('#first_name').val();
+        var last_name = $('#last_name').val();
+        var per_page = $('#per_page').val();
+        var page_no = $('#page_no').val();
+        var roles = "";
+        $.each($('#role').val(), function(i, r){
+            roles += r + ",";
+        });
+        var path = "http://localhost:5001/static/thumbnails/default.png";
+        $.ajax({
+            url : 'http://127.0.0.1:5001/api/users/user',
+            contentType: "application/json",
+            type : 'GET',
+            headers: {
+                'authorization': String(access_token)
+            },
+            data: {
+                'username': username,
+                'first_name': first_name,
+                'last_name': last_name,
+                'roles': roles,
+                'per_page': per_page,
+                'page_no': page_no,
+            },
+            success : function(resp) {
+                if(resp['error']){
+                    //alert(resp['error']);
+                    $('#error').text(resp['error']);
+                }
+                else
+                {
+                    $('#error').text("");
+                    $.each(resp, function(i, user) {
+                    var row =
+                        '<tr id="'+user.publicId+'"><td><form action="/profile/'+user.publicId+'" method="POST">'+
+                        '<input name="publicId" type="hidden" value="'+user.publicId+'">'+
+                        '<button onclick="this.form.submit();">'+
+                        '<img src="'+path+'" width="50"></button></form></td>'+
+                        '<td>'+user.username+'</td>'+
+                        '<td>'+user.name.first_name+'  '+user.name.last_name+'</td>'+
+                        '<td>'+user.role.name+'</td></tr>';
+                        $('#user_table').append(row);
+                    });
+                }
+            },
+            error : function(request,error) {
+                console.log(request);
+                $('#error').text("API call Failed! Please try again.");
+            }
+        });
+    }
+
+function list_roles(){
+    $.ajax({
+
+            url : 'http://127.0.0.1:5001/api/role/',
+            contentType: "application/json",
+            dataType: "json",
+            type : 'GET',
+            success : function(response) {
+            $('#table_role td').parent().remove();
+                if(response['error']){
+                    //alert(response['error']);
+                    $('#error').text(response['error']);
+                    $('#message').text('');
+                }
+                else
+                {
+                    $('#role').empty();
+                    $.each(response, function(i, role){
+                        $('#role').append('<option value="'+role.publicId+'">'+role.name+'</option>');
+                    });
+                }
+            },
+            error : function(request,error) {
+                console.log(request);
+                $('#lbl_error').text("API call failed!");
+            }
+ });
+}
+
+</script>
+<script>
+    $("#searchForm").submit(function(e) {
+    e.preventDefault();
+});</script>
+
+<script>
+    function logout() {
+        $.ajax({
+            url : 'http://127.0.0.1:5001/api/auth/logout',
+            type : 'POST',
+            success : function(data) {
+                if(data['error']){
+                    alert(data['error']);
+                    //$('#error').text(data['error']);
+                }
+                else
+                {
+                    //alert(data['message']);
+                    $.cookie("access_token", null, { path: '/', expires: 1});
+                    $.cookie("isAdmin", null, { path: '/', expires: 1});
+                    window.location.href="/";
+                }
+            },
+            error : function(request,error) {
+                console.log(request);
+                alert(error);
+                //$('#lbl_error').text("Login Failed! Please try again.");
+            }
+        });
+    }
+</script>
+</html>

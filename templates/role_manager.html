@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Role Management</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <!-- Latest compiled JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<div class="container" style="margin-top:20px;">
+    <div class="row">
+    	<div class="col-md-4 col-md-offset-4">
+    		<div class="panel panel-default">
+			  	<div class="panel-heading">
+			    	<h3 class="panel-title">Add New Role</h3>
+			 	</div>
+			  	<div class="panel-body">
+			    	<form accept-charset="UTF-8" role="form">
+                    <fieldset>
+			    	  	<div class="form-group">
+                            <label>Enter Role Name</label>
+			    		    <input required class="form-control" id="name" placeholder="Role Title" name="name" type="text">
+			    		</div>
+                        <div class="form-group">
+                            <label>Enter Role Description</label>
+			    		    <input required class="form-control" id="description" placeholder="Role Description" name="description" type="text">
+			    		</div>
+                        <div class="form-group">
+			    		    <label>Select Permissions</label>
+                            <select multiple class="form-control" name="domain" id="select_permissions">
+                                <option selected value="">----- Select Permissions -----</option>
+                            </select>
+			    		</div>
+                        <center><h4><font color="red" id="error"></font></h4></center>
+                        <center><h4><font color="green" id="message"></font></h4></center>
+			    		<input class="btn btn-lg btn-success btn-block" type="button" onclick="add_role()" value="Add Role">
+			    	</fieldset>
+			      	</form>
+			    </div>
+			</div>
+		</div>
+	</div>
+</div>
+
+    <center><h3>Registered Roles</h3></center>
+<div class="well">
+    <table id="table_role" class="table">
+      <thead>
+        <tr>
+          <th>Role Name</th>
+          <th>Description</th>
+          <th>Permissions</th>
+          <th style="width: 36px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+</div>
+</body>
+<script>
+$(document).ready(function(){
+//List Domains
+    list_permissions();
+//List Roles
+    list_roles();
+ });
+
+    function add_role() {
+        var name = $('#name').val();
+        var description = $('#description').val();
+        var permissions = "";
+        $.each($('#select_permissions').val(), function(i, permission){
+            permissions += permission + ",";
+        });
+        $.ajax({
+            url : 'http://127.0.0.1:5001/api/role/',
+            contentType: "application/json",
+            dataType: "json",
+            type : 'POST',
+            async: false,
+            data : JSON.stringify({
+                'name' : name,
+                'description' : description,
+                'permissions' : permissions
+            }),
+            success : function(data) {
+                if(data['error']){
+                    //alert(data['error']);
+                    $('#error').text(data['error']);
+                    $('#message').text('');
+                }
+                else
+                {
+                    $('#error').text('');
+                    $('#message').text(data['message']);
+                    setTimeout(function(){
+                         $('#message').text('');
+                    }, 3000);
+                    list_roles();
+                }
+            },
+            error : function(request,error) {
+                console.log(request);
+                $('#lbl_error').text("API call failed!");
+            }
+        });
+    }
+function list_permissions(){
+    $.ajax({
+            url : 'http://127.0.0.1:5001/api/permission/',
+            contentType: "application/json",
+            dataType: "json",
+            type : 'GET',
+            success : function(response){
+                if(response['error'])
+                {
+                    $('#message').text("");
+                    $('#error').text(response['error']);
+                }
+                else{
+                    $('#error').text("");
+                    $('#select_permissions').empty();
+                    $.each(response, function(i, permission) {
+                        var option = '<option value="'+permission.publicId+'">'+permission.name+'</option>';
+                        $('#select_permissions').append(option);
+                    });
+                }
+            },
+            error : function(request, error){
+                console.log(request);
+                $('#message').text("");
+                $('#error').text("Failed to add retrieve Domain List! Please try again.");
+            }
+            });
+}
+
+function list_roles(){
+    $.ajax({
+
+            url : 'http://127.0.0.1:5001/api/role/',
+            contentType: "application/json",
+            dataType: "json",
+            type : 'GET',
+            success : function(response) {
+            $('#table_role td').parent().remove();
+                if(response['error']){
+                    //alert(response['error']);
+                    $('#error').text(response['error']);
+                    $('#message').text('');
+                }
+                else
+                {
+                    $.each(response, function(i, role){
+                        var row = '<tr><td>'+role.name+'</td><td>'+role.description+'</td><td>'
+                        $.each(role.permissions, function(i, permission){
+                            row += '<button onclick="get_permission(\''+permission.publicId+'\');" value="'+permission.publicId+'">'+permission.name+'</button>'
+                        });
+                        row += '</td></tr>';
+                        $('#table_role').append(row);
+                    });
+                }
+            },
+            error : function(request,error) {
+                console.log(request);
+                $('#lbl_error').text("API call failed!");
+            }
+ });
+}
+
+function get_permission(publicId){
+    $.ajax({
+
+            url : 'http://127.0.0.1:5001/api/permission/'+publicId,
+            contentType: "application/json",
+            type : 'GET',
+            success : function(response) {
+                if(response['error']){
+                    alert(response['error']);
+                }
+                else
+                {
+                    message = response.name+" \n"+response.area.name+" : ";
+                    $.each(response.actions, function(i, action){
+                        message += action.name+", ";
+                    });
+                    alert(message);
+                }
+            },
+            error : function(request,error) {
+                console.log(request);
+                $('#lbl_error').text("API call failed!");
+            }
+ });
+}
+</script>
+</html>

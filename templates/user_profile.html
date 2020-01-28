@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+</head>
+<body>
+    <hr><hr>
+    <font color="BLUE"><h1 id="role" style="display:inline;"></h1></font>
+    <hr><hr>
+    <h1 style="display:inline;">  @</h1><h2 style="display:inline;" id="username"></h2>
+    <hr>
+    <H1><font color="red" id="error"></font></H1>
+    <img id="picture" src="/static/uploads/default.png" onerror="this.src='/static/uploads/broken.jpg'" width="100"><br><br>
+    <h1 id="name" style="display:inline;"></h1><br><br>
+    <div id="div_domain" style="display: none">
+        <img id="img_domain" width="50">&emsp;<h2 id="domain" style="display:inline;">Domain Name</h2><br><br>
+    </div>
+    <div id="div_school" style="display: none">
+        <img id="img_school" width="50">&emsp;<h2 id="school" style="display:inline;">School Name</h2><br><br>
+    </div>
+
+<br>
+    <button onclick="location.href='/search'">Back to Users</button>
+<br>
+    <button onclick="logout();">Logout</button>
+</body>
+<script>
+$(document).ready(function(){
+  if ($.cookie('access_token') != null){
+    var access_token = $.cookie('access_token');
+    var url = window.location.href;
+    var publicId = url.split('/').filter(e => e).slice(-1);
+    loadProfile(access_token, publicId);
+  }
+  else{
+    window.location.href="/"
+  }
+ });
+
+function loadProfile(access_token, publicId){
+
+    $.ajax({
+            url : 'http://127.0.0.1:5001/api/users/user/'+publicId,
+            contentType: "application/json",
+            type : 'GET',
+            headers: {
+                'authorization': String(access_token)
+            },
+            data : {
+                'publicId': publicId
+            },
+            success : function(response) {
+                if(response['error']){
+                    $('#error').text(response['error']);
+                }
+                else{
+
+                    var path = "http://localhost:5001/static/";
+                    var ext = ".png"
+                    $('#username').text(response['username']);
+                    $('#name').text(response.name.first_name+" "+response.name.last_name);
+                    $('#username').text(response.username);
+                    $('#role').text(response.role.name.toUpperCase());
+
+                    if(response.domain != null){
+                        $('#div_school').css("display", "none");
+                        $('#div_domain').css("display", "block");
+                        $('#img_domain').attr("src", path+"domain"+ext);
+                        $('#domain').text(response.domain.name);
+                    }
+                    else if(response.school != null){
+                        $('#div_domain').css("display", "none");
+                        $('#div_school').css("display", "block");
+                        $('#img_school').attr("src", path+"school"+ext);
+                        $('#school').text(response.school.name);
+                    }
+                }
+            },
+            error : function(request,error) {
+                console.log(request);
+                $('#lbl_error').text("Login Failed! Please try again.");
+            }
+        });
+}
+</script>
+<script>
+    function logout() {
+        $.ajax({
+            url : 'http://127.0.0.1:5001/api/auth/logout',
+            type : 'POST',
+            success : function(data) {
+                if(data['error']){
+                    alert(data['error']);
+                    //$('#error').text(data['error']);
+                }
+                else
+                {
+                    //alert(data['message']);
+                    $.cookie("access_token", null, { path: '/', expires: 1});
+                    $.cookie("isAdmin", null, { path: '/', expires: 1});
+                    window.location.href="/";
+                }
+            },
+            error : function(request,error) {
+                console.log(request);
+                alert(error);
+                //$('#lbl_error').text("Login Failed! Please try again.");
+            }
+        });
+    }
+</script>
+</html>

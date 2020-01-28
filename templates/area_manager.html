@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Area Management</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <!-- Latest compiled JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<div class="container" style="margin-top:20px;">
+    <div class="row">
+    	<div class="col-md-4 col-md-offset-4">
+    		<div class="panel panel-default">
+			  	<div class="panel-heading">
+			    	<h3 class="panel-title">Add New Area</h3>
+			 	</div>
+			  	<div class="panel-body">
+			    	<form accept-charset="UTF-8" role="form">
+                    <fieldset>
+			    	  	<div class="form-group">
+                            <label>Area Name </label>
+			    		    <input required class="form-control" id="name" placeholder="Area Name" name="name" type="text">
+                            <label>Area Description </label>
+                            <input class="form-control" id="description" placeholder="Area Description" name="description" type="text">
+			    		</div>
+                        <center><h4><font color="red" id="error"></font></h4></center>
+                        <center><h4><font color="green" id="message"></font></h4></center>
+			    		<input class="btn btn-lg btn-success btn-block" type="button" onclick="add_area()" value="Add Area">
+			    	</fieldset>
+			      	</form>
+			    </div>
+			</div>
+		</div>
+	</div>
+</div>
+
+    <center><h3>Existing Areas</h3></center>
+<div class="well">
+    <table id="table_area" class="table">
+      <thead>
+        <tr>
+          <th>Area Name</th>
+            <th>Description</th>
+          <th style="width: 36px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+</div>
+</body>
+<script>
+$(document).ready(function(){
+//List Areas
+    list_areas();
+ });
+    function add_area() {
+        var name = $('#name').val();
+        var description = $('#description').val();
+        $.ajax({
+            url : 'http://127.0.0.1:5001/api/area/',
+            contentType: "application/json",
+            dataType: "json",
+            type : 'POST',
+            async: false,
+            data : JSON.stringify({
+                'name' : name,
+                'description' : description
+            }),
+            success : function(response) {
+                if(response['error']){
+                    //alert(response['error']);
+                    $('#error').text(response['error']);
+                    $('#message').text('');
+                }
+                else
+                {
+                    $('#error').text('');
+                    $('#message').text(response['message']);
+                    setTimeout(function(){
+                        $('#message').text('');
+                    }, 3000);
+                    list_areas();
+                }
+            },
+            error : function(request,error) {
+                console.log(request);
+                $('#lbl_error').text("API call failed! Please try again.");
+            }
+        });
+    }
+
+function list_areas(){
+    $('#table_area td').parent().remove();
+    $.ajax({
+
+            url : 'http://127.0.0.1:5001/api/area/',
+            contentType: "application/json",
+            dataType: "json",
+            type : 'GET',
+            success : function(response) {
+            $('#table_area td').parent().remove();
+                if(response['error']){
+                    //alert(response['error']);
+                    $('#error').text(response['error']);
+                    $('#message').text('');
+                }
+                else
+                {
+                    $.each(response, function(i, area){
+                        var row = '<tr><td>'+area.name+'</td><td>'+area.description+'</td></tr>'
+                        $('#table_area').append(row);
+                    });
+                }
+            },
+            error : function(request,error) {
+                console.log(request);
+                $('#lbl_error').text("API call failed!");
+            }
+ });
+}
+</script>
+</html>
